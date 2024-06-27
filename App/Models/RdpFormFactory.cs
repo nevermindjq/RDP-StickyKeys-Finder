@@ -19,10 +19,10 @@ namespace App.Models {
 			// Rdp
 			_SetOcxState(form.Rdp);
 			form.Rdp.Location = new(0, 0);
-			form.Rdp.Size = new(800, 400);
+			form.Rdp.Size = new(900, 500);
 			
 			// Form
-			form.ClientSize = new(800, 400);
+			form.ClientSize = new(900, 500);
 			form.Controls.Add(form.Rdp);
 			
 			form.Rdp.EndInit();

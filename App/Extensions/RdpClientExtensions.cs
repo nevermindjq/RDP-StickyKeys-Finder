@@ -18,16 +18,15 @@ namespace App.Extensions
                 return false;
             }
 
-            await Task.Delay(1000);
+            await Task.Delay(2000);
 
             rdp.Focus();
 
-            for (int i = 0; i < 10; i++)
-            {
+            for (int i = 0; i < 10; i++) {
                 SendKeys.Send("+");
             }
 
-            await Task.Delay(1000);
+            await Task.Delay(2000);
 
             using (var map = new ScreenCapture().CaptureWindow(rdp.Handle)) {
                 map.Save(Path.Combine(directory, $"{rdp.Server}.png"));
@@ -56,6 +55,7 @@ namespace App.Extensions
         }
 
         private static async Task<bool> _TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, int timeout = 6000, int? port = null) {
+            Start:
             var is_nla = port != null;
             
             rdp.Server = server;
@@ -68,7 +68,12 @@ namespace App.Extensions
                 rdp.AdvancedSettings8.AuthenticationLevel = 0;
             }
             
-            rdp.Connect();
+            try {
+                rdp.Connect();
+            }
+            catch {
+                goto Start;
+            }
 
             if (is_nla) {
                 await Task.Delay(1000);
