@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using App.Controls;
+using App.Imports;
 using App.Models;
 
 using AxMSTSCLib;
@@ -18,21 +18,24 @@ namespace App.Extensions
                 return false;
             }
 
-            await Task.Delay(2000);
+            await Task.Delay(3000);
 
-            rdp.Focus();
-
+            User32.SetForegroundWindow(rdp.Handle);
+					
             for (int i = 0; i < 10; i++) {
                 SendKeys.Send("+");
             }
-
-            await Task.Delay(2000);
 
             using (var map = new ScreenCapture().CaptureWindow(rdp.Handle)) {
                 map.Save(Path.Combine(directory, $"{rdp.Server}.png"));
             }
 
-            rdp.Disconnect();
+            try {
+                rdp.Disconnect();
+            }
+            catch {
+                return false;
+            }
 
             return await rdp._WaitAsync(x => x.Connected == 0);
         }
@@ -57,7 +60,7 @@ namespace App.Extensions
         private static async Task<bool> _TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, int timeout = 6000, int? port = null) {
             Start:
             var is_nla = port != null;
-            
+
             rdp.Server = server;
 
             if (is_nla) {
@@ -72,7 +75,7 @@ namespace App.Extensions
                 rdp.Connect();
             }
             catch {
-                goto Start;
+                return false;
             }
 
             if (is_nla) {

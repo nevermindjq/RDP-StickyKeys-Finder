@@ -12,7 +12,8 @@ namespace App {
 			var filepath = _PickFile();
 			var info = new FileInfo(filepath);
 			var filename = info.Name.Substring(0, info.Name.Length - info.Extension.Length);
-			
+
+			var source = new CancellationTokenSource();
 			var @event = new ManualResetEvent(false);
 			var count = 0;
 
@@ -20,15 +21,16 @@ namespace App {
 
 			using (var reader = new StreamReader(filepath)) {
 				while (!reader.EndOfStream) {
-					if (count >= 10) {
-						await Task.Delay(1000);
+					if (count >= 5) {
+						await Task.Delay(1000, source.Token);
 						continue;
 					}
-					
-					count++;
-					
+
+					Interlocked.Increment(ref count);
+
 					var line = await reader.ReadLineAsync();
-					var thread = new Thread(state => {
+					var thread = new Thread(
+						state => {
 							_CheckServer(line, filename);
 
 							if (Interlocked.Decrement(ref count) == 0) {
@@ -36,13 +38,14 @@ namespace App {
 							}
 						}
 					);
-					
+
 					thread.SetApartmentState(ApartmentState.STA);
 					thread.Start(@event);
 				}
 			}
 
 			@event.WaitOne();
+			source.Cancel();
 		}
 
 		private static string _PickFile() {
