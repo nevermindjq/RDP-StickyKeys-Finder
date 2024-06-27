@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+
+using App.Models;
+
 using AxMSTSCLib;
 
 namespace App.Extensions
@@ -23,7 +27,7 @@ namespace App.Extensions
 
             await Task.Delay(3000);
 
-            using (var map = rdp._CreateScreenshot()) {
+            using (var map = new ScreenCapture().CaptureWindow(rdp.Handle)) {
                 map.Save(Path.Combine(directory, $"{rdp.Server}.png"));
             }
 
@@ -33,40 +37,6 @@ namespace App.Extensions
         }
         
         // private
-        private static Bitmap _CreateScreenshot(this Control control) {
-            var form = control.FindForm();
-
-            if (form is null) {
-                throw new($"Form of {control.Name} not found");
-            }
-
-            var form_position = new Point {
-                X = form.Location.X + form.Width - form.ClientRectangle.Width,
-                Y = form.Location.Y + form.Height - form.ClientRectangle.Height
-            };
-            
-            var margin = new Point {
-                X = control.Margin.Left + control.Margin.Right,
-                Y = control.Margin.Top + control.Margin.Bottom
-            };
-
-            var map = new Bitmap(control.Width - margin.X, control.Height - margin.Y);
-
-            using (var graphics = Graphics.FromImage(map)) {
-                graphics.CopyFromScreen(
-                    form_position.X + control.Bounds.X - margin.X,
-                    form_position.Y + control.Bounds.Y - margin.Y,
-                    0,
-                    0,
-                    map.Size,
-                    CopyPixelOperation.SourceCopy
-                );
-            }
-
-            return map;
-        }
-
-
         private static async Task<bool> _WaitAsync(this AxMsRdpClient8NotSafeForScripting rdp, Predicate<AxMsRdpClient8NotSafeForScripting> predicate, int? timeout = null) {
             var is_infinity = timeout is null;
 
