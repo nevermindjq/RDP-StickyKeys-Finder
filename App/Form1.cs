@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using App.Extensions;
@@ -13,12 +14,6 @@ namespace App {
 			InitializeComponent();
 		}
 
-		protected override void OnLoad(EventArgs e) {
-			rdp.AdvancedSettings8.AuthenticationLevel = 0;
-			
-			base.OnLoad(e);
-		}
-
 		private async void btn_pick_Click(object sender, EventArgs e) {
 			var dialog = new OpenFileDialog {
 				Filter = "Text|*.txt",
@@ -28,17 +23,27 @@ namespace App {
 			if (dialog.ShowDialog() is not DialogResult.OK) {
 				return;
 			}
+			
+			await CheckAsync(dialog.FileName, _source.Token);
+		}
 
-			var info = new FileInfo(dialog.FileName);
+		private void btn_cancel_Click(object sender, EventArgs e) {
+			_source.Cancel();
+			_source = new();
+		}
+		
+		//
+		private async Task CheckAsync(string filepath, CancellationToken token) {
+			var info = new FileInfo(filepath);
 			var filename = info.Name.Substring(0, info.Name.Length - info.Extension.Length);
-
+			
 			Directory.CreateDirectory(filename);
 			
-			using (var reader = new StreamReader(dialog.FileName)) {
-				while (!reader.EndOfStream && !_source.Token.IsCancellationRequested) {
+			using (var reader = new StreamReader(filepath)) {
+				while (!reader.EndOfStream && !token.IsCancellationRequested) {
 					var line = (await reader.ReadLineAsync()).Split(':');
 					
-					await rdp.Check(
+					await rdp.CheckAsync(
 						line[0],
 						new() {
 							X = Location.X + Width - ClientRectangle.Width,
@@ -49,10 +54,6 @@ namespace App {
 					);
 				}
 			}
-		}
-
-		private void btn_cancel_Click(object sender, EventArgs e) {
-			_source.Cancel();
 		}
 	}
 }

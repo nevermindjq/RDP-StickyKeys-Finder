@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -8,18 +9,8 @@ namespace App.Extensions
 {
     public static class RdpClientExtensions
     {
-        public static async Task<bool> Check(this AxMsRdpClient8NotSafeForScripting rdp, string server, Point window_position, string directory, int? port = null) {
-            rdp.Server = server;
-
-            if (port is not null) {
-                rdp.AdvancedSettings8.RDPPort = port.Value;
-            }
-
-            rdp.Connect();
-
-            await Task.Delay(3000);
-
-            if (rdp.Connected != 1) {
+        public static async Task<bool> CheckAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, Point window_position, string directory, int? port = null) {
+            if (!await rdp._TryConnectAsync(server, port: port)) {
                 return false;
             }
             
@@ -30,7 +21,7 @@ namespace App.Extensions
                 SendKeys.Send("+");
             }
 
-            await Task.Delay(1000);
+            await Task.Delay(3000);
 
             var margin = new Point {
                 X = rdp.Margin.Left + rdp.Margin.Right,
@@ -54,9 +45,49 @@ namespace App.Extensions
 
             rdp.Disconnect();
 
-            await Task.Delay(2000);
+            return await rdp._WaitAsync(x => x.Connected == 2);
+        }
+        
+        // private
+        private static async Task<bool> _WaitAsync(this AxMsRdpClient8NotSafeForScripting rdp, Predicate<AxMsRdpClient8NotSafeForScripting> predicate, int? timeout = null) {
+            var is_infinity = timeout is null;
 
-            return true;
+            if (is_infinity) {
+                timeout = 0;
+            }
+            
+            for (; is_infinity || timeout > 0; timeout -= 1000, await Task.Delay(1000)) {
+                if (predicate.Invoke(rdp)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static async Task<bool> _TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, int timeout = 6000, int? port = null) {
+            var is_nla = port != null;
+            
+            rdp.Server = server;
+
+            if (is_nla) {
+                rdp.AdvancedSettings8.AuthenticationLevel = 2;
+                rdp.AdvancedSettings8.RDPPort = port.Value;
+            }
+            else {
+                rdp.AdvancedSettings8.AuthenticationLevel = 0;
+            }
+            
+            rdp.Connect();
+
+            if (is_nla) {
+                await Task.Delay(1000);
+                
+                SendKeys.Send("{LEFT}");
+                SendKeys.Send("{ENTER}");
+            }
+
+            return await rdp._WaitAsync(x => x.Connected == 1, timeout);
         }
     }
 }
