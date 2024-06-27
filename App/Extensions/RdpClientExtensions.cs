@@ -9,7 +9,7 @@ namespace App.Extensions
 {
     public static class RdpClientExtensions
     {
-        public static async Task<bool> CheckAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, Point window_position, string directory, int? port = null) {
+        public static async Task<bool> CheckAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, string directory, int? port = null) {
             if (!await rdp._TryConnectAsync(server, port: port)) {
                 return false;
             }
@@ -23,32 +23,50 @@ namespace App.Extensions
 
             await Task.Delay(3000);
 
-            var margin = new Point {
-                X = rdp.Margin.Left + rdp.Margin.Right,
-                Y = rdp.Margin.Top + rdp.Margin.Bottom
-            };
-
-            using (var map = new Bitmap(rdp.Width - margin.X, rdp.Height - margin.Y)) {
-                using (var graphics = Graphics.FromImage(map)) {
-                    graphics.CopyFromScreen(
-                        window_position.X + rdp.Bounds.X - margin.X,
-                        window_position.Y + rdp.Bounds.Y - margin.Y,
-                        0,
-                        0,
-                        map.Size,
-                        CopyPixelOperation.SourceCopy
-                    );
-                }
-
+            using (var map = rdp._CreateScreenshot()) {
                 map.Save(Path.Combine(directory, $"{rdp.Server}.png"));
             }
 
             rdp.Disconnect();
 
-            return await rdp._WaitAsync(x => x.Connected == 2);
+            return await rdp._WaitAsync(x => x.Connected == 0);
         }
         
         // private
+        private static Bitmap _CreateScreenshot(this Control control) {
+            var form = control.FindForm();
+
+            if (form is null) {
+                throw new($"Form of {control.Name} not found");
+            }
+
+            var form_position = new Point {
+                X = form.Location.X + form.Width - form.ClientRectangle.Width,
+                Y = form.Location.Y + form.Height - form.ClientRectangle.Height
+            };
+            
+            var margin = new Point {
+                X = control.Margin.Left + control.Margin.Right,
+                Y = control.Margin.Top + control.Margin.Bottom
+            };
+
+            var map = new Bitmap(control.Width - margin.X, control.Height - margin.Y);
+
+            using (var graphics = Graphics.FromImage(map)) {
+                graphics.CopyFromScreen(
+                    form_position.X + control.Bounds.X - margin.X,
+                    form_position.Y + control.Bounds.Y - margin.Y,
+                    0,
+                    0,
+                    map.Size,
+                    CopyPixelOperation.SourceCopy
+                );
+            }
+
+            return map;
+        }
+
+
         private static async Task<bool> _WaitAsync(this AxMsRdpClient8NotSafeForScripting rdp, Predicate<AxMsRdpClient8NotSafeForScripting> predicate, int? timeout = null) {
             var is_infinity = timeout is null;
 

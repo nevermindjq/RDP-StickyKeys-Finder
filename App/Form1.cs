@@ -45,10 +45,6 @@ namespace App {
 					
 					await rdp.CheckAsync(
 						line[0],
-						new() {
-							X = Location.X + Width - ClientRectangle.Width,
-							Y = Location.Y + Height - ClientRectangle.Height
-						},
 						filename,
 						line.Length == 2 && int.TryParse(line[1], out var port) ? port : null
 					);
