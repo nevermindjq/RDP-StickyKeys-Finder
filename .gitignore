@@ -1,0 +1,14 @@
+.idea/
+bin/
+obj/
+packages/
+riderModule.iml
+_ReSharper.Caches/
+*sln.DotSettings*
+*csproj.Dotsettings*
+*.Development.json
+*.sqlite*
+*.sln.*
+*.session
+*.state
+*.txt
