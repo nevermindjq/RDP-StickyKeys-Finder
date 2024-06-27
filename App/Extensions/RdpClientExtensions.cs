@@ -17,7 +17,9 @@ namespace App.Extensions
             if (!await rdp._TryConnectAsync(server, port: port)) {
                 return false;
             }
-            
+
+            await Task.Delay(1000);
+
             rdp.Focus();
 
             for (int i = 0; i < 10; i++)
@@ -25,7 +27,7 @@ namespace App.Extensions
                 SendKeys.Send("+");
             }
 
-            await Task.Delay(3000);
+            await Task.Delay(1000);
 
             using (var map = new ScreenCapture().CaptureWindow(rdp.Handle)) {
                 map.Save(Path.Combine(directory, $"{rdp.Server}.png"));

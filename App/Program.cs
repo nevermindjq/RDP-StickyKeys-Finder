@@ -1,5 +1,11 @@
 ﻿using System;
+using System.IO;
 using System.Windows.Forms;
+
+using App.Extensions;
+using App.Models;
+
+using AxMSTSCLib;
 
 namespace App {
 	internal static class Program {
@@ -8,9 +14,15 @@ namespace App {
         /// </summary>
         [STAThread]
 		private static void Main() {
-			Application.EnableVisualStyles();
-			Application.SetCompatibleTextRenderingDefault(false);
-			Application.Run(new Form1());
+			var form = new RdpFormFactory().Create();
+			
+			form.Shown += async (sender, args) => {
+				Directory.CreateDirectory("test");
+
+				await form.Rdp.CheckAsync("test", "test");
+			};
+
+			Application.Run(form);
 		}
 	}
 }
