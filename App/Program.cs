@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,8 +10,6 @@ using App.Models;
 
 namespace App {
 	internal static class Program {
-		private static int _count;
-
 		public static RdpFormFactory RdpFormFactory { get; } = new();
 		
 		public static async Task Main() {
@@ -27,9 +24,8 @@ namespace App {
 			var filename = info.Name.Substring(0, info.Name.Length - info.Extension.Length);
 
 			var source = new CancellationTokenSource();
-			var @event = new ManualResetEvent(false);
 
-			var list = new List<(RdpForm, Thread)>();
+			var list = new List<(RdpForm form, Thread thread, bool with_nla)>();
 			
 			//
 			Directory.CreateDirectory(filename);
@@ -37,25 +33,23 @@ namespace App {
 			using (var reader = new StreamReader(filepath)) {
 				while (!reader.EndOfStream) {
 					// Create windows
-					if (_count < 5) {
+					if (list.Count < 5) {
 						for (int i = 0; i < 5; i++) {
 							var line = (await reader.ReadLineAsync()).Split(':');
 
-							list.Add(CreateForm(@event, line[0], line.Length == 2 ? int.Parse(line[1]) : null));
+							list.Add(CreateForm(line[0], line.Length == 2 ? int.Parse(line[1]) : null));
 						}
-						
-						Interlocked.Increment(ref _count);
 						
 						continue;
 					}
 					
 					// Check rdp server
-					foreach (var (form, thread) in list) {
+					foreach (var data in list.ToArray()) {
 						try {
-							form.Invoke(
+							data.form.Invoke(
 								() => {
-									form.Visible = true;
-									form.WindowState = FormWindowState.Normal;
+									data.form.Visible = true;
+									data.form.WindowState = FormWindowState.Normal;
 								}
 							);
 						}
@@ -63,41 +57,50 @@ namespace App {
 							continue;
 						}
 						
-						form.Invoke(
+						data.form.Invoke(
 							async () => {
-								if (form.Rdp.AdvancedSettings8.RDPPort > 0) {
-									form.Rdp.Connect();
-									
+								//
+								if (data.with_nla) {
+									data.form.Rdp.Connect();
+
 									await Task.Delay(1000, source.Token);
-							
+
 									SendKeys.Send("{LEFT}");
 									SendKeys.Send("{ENTER}");
 								}
-								
-								if (!await form.Rdp.WaitAsync(x => x.Connected == 1, 4000)) {
-									form.Close();
-									thread.Interrupt();
+
+								//
+								if (!await data.form.Rdp.WaitAsync(x => x.Connected == 1, 4000)) {
+									data.form.Rdp.Dispose();
+									
+									data.form.Dispose();
+									data.thread.Interrupt();
+									
 									return;
 								}
 
+								//
 								await Task.Delay(1000, source.Token);
-								 form.Rdp.ClickKeys();
-								 
-								 await Task.Delay(1000, source.Token);
-								 form.Rdp.CreateScreenshot(filename);
-						
-								form.Close();
-								thread.Interrupt();
+								data.form.Rdp.ClickKeys();
+
+								await Task.Delay(1000, source.Token);
+								data.form.Rdp.CreateScreenshot(filename);
+
+								// Dispose
+								data.form.Rdp.Dispose();
+								
+								data.form.Dispose();
+								data.thread.Interrupt();
 							}
 						);
 
-						thread.Join();
+						data.thread.Join();
+						list.Remove(data);
 					}
 				}
 			}
 			
 			//
-			@event.WaitOne();
 			source.Cancel();
 		}
 
@@ -123,26 +126,22 @@ namespace App {
 			}
 		}
 
-		public static (RdpForm form, Thread thread) CreateForm(ManualResetEvent reset, string server, int? port) {
+		public static (RdpForm form, Thread thread, bool with_nla) CreateForm(string server, int? port) {
 			var form = RdpFormFactory.Create();
 			var thread = new Thread(
-				state => {
+				() => {
 					RdpFormFactory.InitializeRdp(form);
 
 					form.Shown += async (sender, args) => await form.Rdp.TryConnectAsync(server, port: port);
                     
 					Application.Run(form);
-
-					if (Interlocked.Decrement(ref _count) == 0) {
-						((ManualResetEvent)state).Set();
-					}
 				}
 			);
 			
 			thread.SetApartmentState(ApartmentState.STA);
-			thread.Start(reset);
+			thread.Start();
 
-			return (form, thread);
+			return (form, thread, port is not null);
 		}
 	}
 }
