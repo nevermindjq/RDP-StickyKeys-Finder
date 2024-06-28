@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Windows.Forms;
 
 using App.Controls;
 using App.Models.Abstractions;
@@ -12,7 +13,17 @@ namespace App.Models {
 		
 		public RdpForm Create() {
 			var form = new RdpForm();
+			
+			form.ClientSize = new(900, 500);
+			form.Visible = false;
+			form.WindowState = FormWindowState.Minimized;
 
+			return form;
+		}
+
+		public void InitializeRdp(RdpForm form) {
+			form.Rdp = new();
+            
 			form.Rdp.BeginInit();
 			
 			// Rdp
@@ -20,13 +31,9 @@ namespace App.Models {
 			form.Rdp.Location = new(0, 0);
 			form.Rdp.Size = new(900, 500);
 			
-			// Form
-			form.ClientSize = new(900, 500);
 			form.Controls.Add(form.Rdp);
 			
 			form.Rdp.EndInit();
-
-			return form;
 		}
 
 		private static void _SetOcxState(AxMsRdpClient8NotSafeForScripting rdp) {
