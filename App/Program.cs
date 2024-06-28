@@ -65,7 +65,16 @@ namespace App {
 						
 						form.Invoke(
 							async () => {
-								if (!await form.Rdp.WaitAsync(x => x.Connected == 1, 6000)) {
+								if (form.Rdp.AdvancedSettings8.RDPPort > 0) {
+									form.Rdp.Connect();
+									
+									await Task.Delay(1000, source.Token);
+							
+									SendKeys.Send("{LEFT}");
+									SendKeys.Send("{ENTER}");
+								}
+								
+								if (!await form.Rdp.WaitAsync(x => x.Connected == 1, 4000)) {
 									form.Close();
 									thread.Interrupt();
 									return;

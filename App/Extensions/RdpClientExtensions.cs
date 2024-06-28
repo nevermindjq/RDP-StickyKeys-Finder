@@ -26,7 +26,7 @@ namespace App.Extensions
             return false;
         }
 
-        public static async Task<bool> TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, int timeout = 6000, int? port = null, bool wait = false) {
+        public static bool ConfigureConnection(this AxMsRdpClient8NotSafeForScripting rdp, string server, int? port) {
             var is_nla = port != null;
 
             rdp.Server = server;
@@ -38,19 +38,20 @@ namespace App.Extensions
             else {
                 rdp.AdvancedSettings8.AuthenticationLevel = 0;
             }
+
+            return is_nla;
+        }
+
+        public static async Task<bool> TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, int timeout = 6000, int? port = null, bool wait = false) {
+            if (rdp.ConfigureConnection(server, port)) {
+                return false;
+            }
             
             try {
                 rdp.Connect();
             }
             catch {
                 return false;
-            }
-
-            if (is_nla) {
-                await Task.Delay(1000);
-                
-                SendKeys.Send("{LEFT}");
-                SendKeys.Send("{ENTER}");
             }
 
             return !wait || await rdp.WaitAsync(x => x.Connected == 1, timeout);
