@@ -29,6 +29,14 @@ namespace App.Controls {
 			this.btn_Select = new System.Windows.Forms.Button();
 			this.box_Threads = new System.Windows.Forms.TextBox();
 			this.lbl_Threads = new System.Windows.Forms.Label();
+			this.lbl_Connection = new System.Windows.Forms.Label();
+			this.box_ConnectionTimeout = new System.Windows.Forms.TextBox();
+			this.box_CertificateWarningDelay = new System.Windows.Forms.TextBox();
+			this.lbl_CertificateWarning = new System.Windows.Forms.Label();
+			this.box_LoadingDelay = new System.Windows.Forms.TextBox();
+			this.lbl_Loading = new System.Windows.Forms.Label();
+			this.box_StickyKeysWarningDelay = new System.Windows.Forms.TextBox();
+			this.lbl_StickyKeysWarning = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// btn_Cancel
@@ -71,11 +79,87 @@ namespace App.Controls {
 			this.lbl_Threads.Text = "Threads";
 			this.lbl_Threads.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
+			// lbl_Connection
+			// 
+			this.lbl_Connection.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.lbl_Connection.Location = new System.Drawing.Point(178, 19);
+			this.lbl_Connection.Name = "lbl_Connection";
+			this.lbl_Connection.Size = new System.Drawing.Size(160, 25);
+			this.lbl_Connection.TabIndex = 4;
+			this.lbl_Connection.Text = "Connection";
+			this.lbl_Connection.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
+			// box_ConnectionTimeout
+			// 
+			this.box_ConnectionTimeout.Location = new System.Drawing.Point(178, 47);
+			this.box_ConnectionTimeout.Name = "box_ConnectionTimeout";
+			this.box_ConnectionTimeout.Size = new System.Drawing.Size(160, 20);
+			this.box_ConnectionTimeout.TabIndex = 5;
+			// 
+			// box_CertificateWarningDelay
+			// 
+			this.box_CertificateWarningDelay.Location = new System.Drawing.Point(178, 109);
+			this.box_CertificateWarningDelay.Name = "box_CertificateWarningDelay";
+			this.box_CertificateWarningDelay.Size = new System.Drawing.Size(160, 20);
+			this.box_CertificateWarningDelay.TabIndex = 7;
+			// 
+			// lbl_CertificateWarning
+			// 
+			this.lbl_CertificateWarning.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.lbl_CertificateWarning.Location = new System.Drawing.Point(178, 78);
+			this.lbl_CertificateWarning.Name = "lbl_CertificateWarning";
+			this.lbl_CertificateWarning.Size = new System.Drawing.Size(160, 25);
+			this.lbl_CertificateWarning.TabIndex = 6;
+			this.lbl_CertificateWarning.Text = "Certificate Warning";
+			this.lbl_CertificateWarning.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
+			// box_LoadingDelay
+			// 
+			this.box_LoadingDelay.Location = new System.Drawing.Point(344, 47);
+			this.box_LoadingDelay.Name = "box_LoadingDelay";
+			this.box_LoadingDelay.Size = new System.Drawing.Size(160, 20);
+			this.box_LoadingDelay.TabIndex = 9;
+			// 
+			// lbl_Loading
+			// 
+			this.lbl_Loading.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.lbl_Loading.Location = new System.Drawing.Point(344, 19);
+			this.lbl_Loading.Name = "lbl_Loading";
+			this.lbl_Loading.Size = new System.Drawing.Size(160, 25);
+			this.lbl_Loading.TabIndex = 8;
+			this.lbl_Loading.Text = "Loading";
+			this.lbl_Loading.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
+			// box_StickyKeysWarningDelay
+			// 
+			this.box_StickyKeysWarningDelay.Location = new System.Drawing.Point(344, 109);
+			this.box_StickyKeysWarningDelay.Name = "box_StickyKeysWarningDelay";
+			this.box_StickyKeysWarningDelay.Size = new System.Drawing.Size(160, 20);
+			this.box_StickyKeysWarningDelay.TabIndex = 11;
+			// 
+			// lbl_StickyKeysWarning
+			// 
+			this.lbl_StickyKeysWarning.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.lbl_StickyKeysWarning.Location = new System.Drawing.Point(344, 76);
+			this.lbl_StickyKeysWarning.Name = "lbl_StickyKeysWarning";
+			this.lbl_StickyKeysWarning.Size = new System.Drawing.Size(160, 25);
+			this.lbl_StickyKeysWarning.TabIndex = 10;
+			this.lbl_StickyKeysWarning.Text = "Sticky Keys Warning";
+			this.lbl_StickyKeysWarning.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(184, 151);
+			this.ClientSize = new System.Drawing.Size(584, 151);
+			this.Controls.Add(this.box_StickyKeysWarningDelay);
+			this.Controls.Add(this.lbl_StickyKeysWarning);
+			this.Controls.Add(this.box_LoadingDelay);
+			this.Controls.Add(this.lbl_Loading);
+			this.Controls.Add(this.box_CertificateWarningDelay);
+			this.Controls.Add(this.lbl_CertificateWarning);
+			this.Controls.Add(this.box_ConnectionTimeout);
+			this.Controls.Add(this.lbl_Connection);
 			this.Controls.Add(this.lbl_Threads);
 			this.Controls.Add(this.box_Threads);
 			this.Controls.Add(this.btn_Select);
@@ -85,6 +169,17 @@ namespace App.Controls {
 			this.ResumeLayout(false);
 			this.PerformLayout();
 		}
+
+		private System.Windows.Forms.TextBox box_CertificateWarningDelay;
+		private System.Windows.Forms.Label lbl_CertificateWarning;
+		private System.Windows.Forms.TextBox box_LoadingDelay;
+		private System.Windows.Forms.Label lbl_Loading;
+		private System.Windows.Forms.TextBox box_StickyKeysWarningDelay;
+		private System.Windows.Forms.Label lbl_StickyKeysWarning;
+
+		private System.Windows.Forms.TextBox box_ConnectionTimeout;
+
+		private System.Windows.Forms.Label lbl_Connection;
 
 		private System.Windows.Forms.Button btn_Cancel;
 		private System.Windows.Forms.Button btn_Select;

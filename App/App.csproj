@@ -40,6 +40,9 @@
         <Reference Include="MSTSCLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
           <HintPath>..\packages\AxMSTSCLib.1.0.1\lib\net40\MSTSCLib.dll</HintPath>
         </Reference>
+        <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+          <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+        </Reference>
         <Reference Include="System"/>
         <Reference Include="System.Core"/>
         <Reference Include="System.Xml.Linq"/>
@@ -65,6 +68,7 @@
         <Compile Include="Models\Abstractions\IFactory.cs" />
         <Compile Include="Models\RdpFormFactory.cs" />
         <Compile Include="Models\ScreenCapture.cs" />
+        <Compile Include="Models\Settings.cs" />
         <Compile Include="Program.cs"/>
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <EmbeddedResource Include="Controls\MainForm.resx">

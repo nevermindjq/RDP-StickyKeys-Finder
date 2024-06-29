@@ -42,7 +42,7 @@ namespace App.Extensions
             return is_nla;
         }
 
-        public static async Task<bool> TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, int timeout = 6000, int? port = null, bool wait = false) {
+        public static async Task<bool> TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, int? timeout = null, int? port = null) {
             if (rdp.ConfigureConnection(server, port)) {
                 return false;
             }
@@ -54,7 +54,7 @@ namespace App.Extensions
                 return false;
             }
 
-            return !wait || await rdp.WaitAsync(x => x.Connected == 1, timeout);
+            return timeout is null || await rdp.WaitAsync(x => x.Connected == 1, timeout);
         }
 
         public static void ClickKeys(this AxMsRdpClient8NotSafeForScripting rdp) {
