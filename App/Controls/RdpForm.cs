@@ -12,5 +12,11 @@ namespace App.Controls {
 			
 			Text = Rdp.Server;
 		}
+
+		protected override void Dispose(bool disposing) {
+			Rdp.Dispose();
+			
+			base.Dispose(disposing);
+		}
 	}
 }

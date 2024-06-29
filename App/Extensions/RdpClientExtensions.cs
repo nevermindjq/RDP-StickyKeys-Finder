@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -10,15 +11,19 @@ using AxMSTSCLib;
 namespace App.Extensions
 {
     public static class RdpClientExtensions {
-        public static async Task<bool> WaitAsync(this AxMsRdpClient8NotSafeForScripting rdp, Predicate<AxMsRdpClient8NotSafeForScripting> predicate, int? timeout = null) {
+        public static async Task<bool> WaitConnectionAsync(this AxMsRdpClient8NotSafeForScripting rdp, int? timeout = null, CancellationToken token = default) {
             var is_infinity = timeout is null;
 
             if (is_infinity) {
                 timeout = 0;
             }
             
-            for (; is_infinity || timeout > 0; timeout -= 1000, await Task.Delay(1000)) {
-                if (predicate.Invoke(rdp)) {
+            for (; is_infinity || timeout > 0; timeout -= 1000, await Task.Delay(1000, token)) {
+                if (rdp.Connected == 0 || token.IsCancellationRequested) {
+                    return false;
+                }
+                
+                if (rdp.Connected == 1) {
                     return true;
                 }
             }
@@ -32,6 +37,9 @@ namespace App.Extensions
             rdp.Server = server;
 
             if (is_nla) {
+                rdp.UserName = "";
+                rdp.AdvancedSettings8.ClearTextPassword = "";
+                
                 rdp.AdvancedSettings8.AuthenticationLevel = 2;
                 rdp.AdvancedSettings8.RDPPort = port.Value;
             }
@@ -47,14 +55,9 @@ namespace App.Extensions
                 return false;
             }
             
-            try {
-                rdp.Connect();
-            }
-            catch {
-                return false;
-            }
-
-            return timeout is null || await rdp.WaitAsync(x => x.Connected == 1, timeout);
+            rdp.Connect();
+            
+            return timeout is null || await rdp.WaitConnectionAsync(timeout);
         }
 
         public static void ClickKeys(this AxMsRdpClient8NotSafeForScripting rdp) {

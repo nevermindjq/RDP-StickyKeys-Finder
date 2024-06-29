@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,12 +10,16 @@ using System.Windows.Forms;
 using App.Extensions;
 using App.Models;
 
+using Microsoft.Win32;
+
 using Newtonsoft.Json;
 
-namespace App.Controls {
-	public partial class MainForm : Form {
+namespace App.Controls
+{
+    public partial class MainForm : Form {
 		private readonly Settings _settings = new();
 		private readonly RdpFormFactory _factory = new();
+		private readonly List<(RdpForm form, Thread thread, bool with_nla)> _worker_threads = new();
 		private CancellationTokenSource _source = new();
 		private Thread? _execution_thread;
         
@@ -70,6 +75,7 @@ namespace App.Controls {
 			
 			Directory.CreateDirectory(file.name);
 			btn_Cancel.Enabled = true;
+			btn_Select.Enabled = false;
 			
 			//
 			_execution_thread = new(() => _StartChecking(file, (int)threads, (int)connection_timeout, (int)loading_delay, (int)certificate_warning_delay, (int)sticky_keys_delay, _source.Token));
@@ -77,17 +83,44 @@ namespace App.Controls {
 		}
 
 		private void btn_Cancel_Click(object sender, EventArgs e) {
+			btn_Cancel.Enabled = false;
+			
 			_source.Cancel();
 			_source.Dispose();
 			_source = new();
+			
+			_execution_thread?.Interrupt();
 
-			btn_Cancel.Enabled = false;
+			foreach (var (form, thread, _) in _worker_threads.ToArray()) {
+				if (form.IsDisposed) {
+					continue;
+				}
+				
+				form.Close();
+				form.Dispose();
+				
+				thread.Interrupt();
+			}
+			
+			btn_Select.Enabled = true;
 		}
 		
 		// private
-		private uint _ParseUint(string source) => !uint.TryParse(source, out var result) ? 0 : result;
+		private static void _WaitInvokeAsync(Control control, Delegate @delegate) {
+			while (true) {
+				try {
+					control.Invoke(@delegate);
+				} catch {
+					continue;
+				}
+				
+				break;
+			}
+		}
+		
+		private static uint _ParseUint(string source) => !uint.TryParse(source, out var result) ? 0 : result;
 
-		private (string path, string name)? _PickFile() {
+		private static (string path, string name)? _PickFile() {
 			var dialog = new OpenFileDialog {
 				Filter = "Text|*.txt",
 				Multiselect = false
@@ -102,13 +135,15 @@ namespace App.Controls {
 			return null;
 		}
 		
-		public (RdpForm form, Thread thread, bool with_nla) CreateApp(string server, int? port) {
+		private (RdpForm form, Thread thread, bool with_nla) _CreateApp(string server, int? port) {
 			var form = _factory.Create();
 			var thread = new Thread(
 				() => {
 					_factory.InitializeRdp(form);
 
-					form.Shown += async (sender, args) => await form.Rdp.TryConnectAsync(server, port: port);
+					form.Shown += async (sender, args) => {
+						await form.Rdp.TryConnectAsync(server, port: port);
+					};
                     
 					Application.Run(form);
 				}
@@ -128,37 +163,38 @@ namespace App.Controls {
 			int certificate_warning_delay,
             int sticky_keys_delay,
 			CancellationToken token) {
-			var list = new List<(RdpForm form, Thread thread, bool with_nla)>();
 			
 			using (var reader = new StreamReader(file.path)) {
 				while (!reader.EndOfStream && !token.IsCancellationRequested) {
+					if (!token.IsCancellationRequested) {
+						_worker_threads.Clear();
+					}
+					
 					// Create apps
-					if (list.Count < threads) {
-						for (int i = 0; i < 5; i++) {
+					if (_worker_threads.Count < threads) {
+						for (int i = 0; i < 5 && !reader.EndOfStream; i++) {
 							var line = (await reader.ReadLineAsync()).Split(':');
-
-							list.Add(CreateApp(line[0], line.Length == 2 ? int.Parse(line[1]) : null));
+							
+							_worker_threads.Add(_CreateApp(line[0], line.Length == 2 ? int.Parse(line[1]) : null));
 						}
-						
-						continue;
 					}
 					
 					// Check rdp servers
-					var array = list.ToArray();
-                    
-					for (var index = 0; index < array.Length && !token.IsCancellationRequested; index++) {
-						var data = array[index];
+					for (var index = 0; index < _worker_threads.Count && !token.IsCancellationRequested; index++) {
+						var data = _worker_threads[index];
 
-						try {
-							data.form.Invoke(
-								() => {
-									data.form.Visible = true;
-									data.form.WindowState = FormWindowState.Normal;
-								}
-							);
-						} catch {
-							continue;
-						}
+						_WaitInvokeAsync(
+							data.form,
+							 async () => {
+								data.form.Visible = true;
+								data.form.WindowState = FormWindowState.Normal;
+								
+								await Task.Delay(connection_timeout + loading_delay + certificate_warning_delay + sticky_keys_delay, token);
+							
+							
+								data.form.Close();
+							}
+						);
 
 						data.form.Invoke(
 							async () => {
@@ -174,7 +210,7 @@ namespace App.Controls {
 									}
 
 									// Wait connection
-									if (!await data.form.Rdp.WaitAsync(x => x.Connected == 1, connection_timeout)) {
+									if (!await data.form.Rdp.WaitConnectionAsync(connection_timeout, token)) {
 										return;
 									}
 
@@ -184,36 +220,31 @@ namespace App.Controls {
 
 									await Task.Delay(sticky_keys_delay, token);
 									data.form.Rdp.CreateScreenshot(file.name);
-
-								} catch {
-									// ignore
 								}
 								finally {
-									data.form.Rdp.Dispose();
+									data.form.Rdp.Disconnect();
 
-									data.form.Dispose();
-									data.thread.Interrupt();
+									data.form.Close();
 								}
 							}
 						);
 
-						data.thread.Join();
-						list.Remove(data);
+						try {
+							data.thread.Join();
+						}
+						catch {
+							// ignore
+						}
 					}
 				}
 			}
-			
-			// Dispose on cancel
-			foreach (var (form, thread, _) in list) {
-				form.Invoke(
-					() => {
-						form.Close();
-						form.Dispose();
-					}
-				);
-				
-				thread.Interrupt();
-			}
+
+			Invoke(
+				() => {
+					btn_Cancel.Enabled = false;
+					btn_Select.Enabled = true;
+				}
+			);
 		}
 	}
 }
