@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -7,6 +8,8 @@ using System.Windows.Forms;
 using App.Models;
 
 using AxMSTSCLib;
+
+using MSTSCLib;
 
 namespace App.Extensions
 {
@@ -35,12 +38,14 @@ namespace App.Extensions
             var is_nla = port != null;
 
             rdp.Server = server;
-
+            
             if (is_nla) {
-                rdp.UserName = "";
-                rdp.AdvancedSettings8.ClearTextPassword = "";
-                
-                rdp.AdvancedSettings8.AuthenticationLevel = 2;
+                //rdp.UserName = "username";
+                //var secure = (IMsRdpClientNonScriptable)rdp.GetOcx();
+                //secure.ClearTextPassword = "password";
+                //
+                //rdp.AdvancedSettings8.AuthenticationLevel = 2;
+                //rdp.AdvancedSettings8.EnableCredSspSupport = true;
                 rdp.AdvancedSettings8.RDPPort = port.Value;
             }
             else {
@@ -50,12 +55,13 @@ namespace App.Extensions
             return is_nla;
         }
 
-        public static async Task<bool> TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, string server, int? timeout = null, int? port = null) {
-            if (rdp.ConfigureConnection(server, port)) {
+        public static async Task<bool> TryConnectAsync(this AxMsRdpClient8NotSafeForScripting rdp, int? timeout = null) {
+            try {
+                rdp.Connect();
+            }
+            catch {
                 return false;
             }
-            
-            rdp.Connect();
             
             return timeout is null || await rdp.WaitConnectionAsync(timeout);
         }
@@ -63,8 +69,29 @@ namespace App.Extensions
         public static void ClickKeys(this AxMsRdpClient8NotSafeForScripting rdp) {
             rdp.Focus();
 
+            var ocx = (IMsRdpClientNonScriptable_Sendkeys)rdp.GetOcx();
+
+            var codes = new int[10];
+            var realised = new int[10];
+            var unrealised = new int[10];
+
             for (int i = 0; i < 10; i++) {
-                SendKeys.Send("+");
+                codes[i] = 0x2A;
+                realised[i] = 1;
+                unrealised[i] = 0;
+            }
+            
+            unsafe
+            {
+                fixed(int *pScanCodes = codes) {
+                    fixed (int* pKeyReleased = realised) {
+                        ocx.SendKeys(codes.Length, pKeyReleased, pScanCodes);
+                    }
+
+                    fixed (int* pKeyUnrealised = unrealised) {
+                        ocx.SendKeys(codes.Length, pKeyUnrealised, pScanCodes);
+                    }
+                }
             }
         }
 
@@ -73,5 +100,26 @@ namespace App.Extensions
                 map.Save(Path.Combine(directory, $"{rdp.Server}.png"));
             }
         }
+        
+        #region Inline Interface Definition
+        [InterfaceType(1)]
+        [Guid("2F079C4C-87B2-4AFD-97AB-20CDB43038AE")]
+        private interface IMsRdpClientNonScriptable_Sendkeys : IMsTscNonScriptable
+        {
+#pragma warning disable CS0108
+            [DispId(4)] string BinaryPassword { get; set; }
+            [DispId(5)] string BinarySalt { get; set; }
+            [DispId(1)] string ClearTextPassword { set; }
+            [DispId(2)] string PortablePassword { get; set; }
+            [DispId(3)] string PortableSalt { get; set; }
+
+            void NotifyRedirectDeviceChange(uint wParam, int lParam);
+            void ResetPassword();
+
+#pragma warning restore CS0108
+
+            unsafe void SendKeys(int numKeys, int *pbArrayKeyUp, int *plKeyData);
+        }
+        #endregion
     }
 }

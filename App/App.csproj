@@ -13,6 +13,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -67,7 +68,6 @@
     </Compile>
     <Compile Include="Extensions\RdpClientExtensions.cs" />
     <Compile Include="Imports\User32.cs" />
-    <Compile Include="Models\Abstractions\IFactory.cs" />
     <Compile Include="Models\RdpFormFactory.cs" />
     <Compile Include="Models\ScreenCapture.cs" />
     <Compile Include="Models\Settings.cs" />
