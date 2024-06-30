@@ -10,6 +10,8 @@ using App.Models;
 
 using Newtonsoft.Json;
 
+#nullable enable
+
 namespace App.Controls
 {
     public partial class MainForm : Form {
@@ -17,7 +19,6 @@ namespace App.Controls
 		private readonly RdpFormFactory _factory = new();
 		private readonly List<(RdpForm form, Thread thread)> _worker_threads = new();
 		private readonly ManualResetEvent _event = new(false);
-		private CancellationTokenSource _source = new();
 		private Thread? _execution_thread;
         
 		public MainForm() {
@@ -64,39 +65,34 @@ namespace App.Controls
 			btn_Select.Enabled = false;
 			
 			//
-			_execution_thread = new(() => _StartChecking(file, (int)_settings.Threads, _source.Token));
+			_execution_thread = new(() => _StartChecking(file, (int)_settings.Threads));
 			_execution_thread.Start();
 		}
 
 		private void btn_Cancel_Click(object sender, EventArgs e) {
 			btn_Cancel.Enabled = false;
 			
-			_source.Cancel();
-			_source.Dispose();
-			_source = new();
-			
 			_execution_thread?.Interrupt();
-
-			foreach (var (form, thread) in _worker_threads.ToArray()) {
-				if (form.IsDisposed) {
-					continue;
-				}
-
-				form.Invoke(
-					() => {
-						form.Close();
-					}
-				);
-
-				form.Dispose();
-				
-				thread.Interrupt();
-			}
+			_CloseWorkerThreads();
 			
 			btn_Select.Enabled = true;
 		}
 		
 		// private
+		private void _CloseWorkerThreads() {
+			var threads = _worker_threads.ToArray();
+			_worker_threads.Clear();
+			
+			foreach (var (form, thread) in threads) {
+				if (!form.IsDisposed) {
+					continue;
+				}
+
+				form.Dispose();
+				thread.Interrupt();
+			}
+		}
+		
 		private static uint _ParseUint(string source) => !uint.TryParse(source, out var result) ? 0 : result;
         
 		private void _SetSettings() {
@@ -123,15 +119,20 @@ namespace App.Controls
 		}
 		
 		private unsafe (RdpForm form, Thread thread) _CreateApp(string server, int? port, int* count, string directory) {
-			var form = _factory.Create(_settings, _event, port is not null, count, directory);
+			var form = _factory.Create(_settings, _event, count, directory);
+			
 			var thread = new Thread(
 				() => {
 					_factory.InitializeRdp(form);
 					form.Rdp.ConfigureConnection(server, port);
 
 					form.Show();
-                    
-					Application.Run(form);
+
+					try {
+						Application.Run(form);
+					} catch {
+						// ignore
+					}
 				}
 			);
 			
@@ -141,21 +142,16 @@ namespace App.Controls
 			return (form, thread);
 		}
 
-		private async void _StartChecking((string path, string name) file, int threads, CancellationToken token) {
-			
+		private void _StartChecking((string path, string name) file, int threads) {
 			using (var reader = new StreamReader(file.path)) {
-				while (!reader.EndOfStream && !token.IsCancellationRequested) {
-					if (!token.IsCancellationRequested) {
-						_worker_threads.Clear();
-					}
-					
+				while (!reader.EndOfStream) {
 					var count = threads;
 					_event.Reset();
 					
 					// Create apps
 					if (_worker_threads.Count < threads) {
-						for (int i = 0; i < threads && !reader.EndOfStream; i++) {
-							var line = (await reader.ReadLineAsync()).Split(':');
+						for (int i = _worker_threads.Count; i < threads; i++) {
+							var line = reader.ReadLine().Split(':');
 
 							unsafe {
 								_worker_threads.Add(
@@ -171,7 +167,9 @@ namespace App.Controls
 					}
 					
 					try {
-						_event.WaitOne();
+						_event.WaitOne((int)(_settings.ConnectionTimeout + _settings.LoadingDelay + _settings.StickyKeysWarningDelay));
+						
+						_CloseWorkerThreads();
 					}
 					catch {
 						// ignore

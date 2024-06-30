@@ -98,20 +98,24 @@ namespace App.Controls {
 			// 
 			// box_CertificateWarningDelay
 			// 
-			this.box_CertificateWarningDelay.Location = new System.Drawing.Point(178, 109);
+			this.box_CertificateWarningDelay.Enabled = false;
+			this.box_CertificateWarningDelay.Location = new System.Drawing.Point(344, 107);
 			this.box_CertificateWarningDelay.Name = "box_CertificateWarningDelay";
 			this.box_CertificateWarningDelay.Size = new System.Drawing.Size(160, 20);
 			this.box_CertificateWarningDelay.TabIndex = 7;
+			this.box_CertificateWarningDelay.Visible = false;
 			// 
 			// lbl_CertificateWarning
 			// 
+			this.lbl_CertificateWarning.Enabled = false;
 			this.lbl_CertificateWarning.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.lbl_CertificateWarning.Location = new System.Drawing.Point(178, 78);
+			this.lbl_CertificateWarning.Location = new System.Drawing.Point(344, 76);
 			this.lbl_CertificateWarning.Name = "lbl_CertificateWarning";
 			this.lbl_CertificateWarning.Size = new System.Drawing.Size(160, 25);
 			this.lbl_CertificateWarning.TabIndex = 6;
 			this.lbl_CertificateWarning.Text = "Certificate Warning";
 			this.lbl_CertificateWarning.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			this.lbl_CertificateWarning.Visible = false;
 			// 
 			// box_LoadingDelay
 			// 
@@ -132,7 +136,7 @@ namespace App.Controls {
 			// 
 			// box_StickyKeysWarningDelay
 			// 
-			this.box_StickyKeysWarningDelay.Location = new System.Drawing.Point(344, 109);
+			this.box_StickyKeysWarningDelay.Location = new System.Drawing.Point(178, 109);
 			this.box_StickyKeysWarningDelay.Name = "box_StickyKeysWarningDelay";
 			this.box_StickyKeysWarningDelay.Size = new System.Drawing.Size(160, 20);
 			this.box_StickyKeysWarningDelay.TabIndex = 11;
@@ -140,7 +144,7 @@ namespace App.Controls {
 			// lbl_StickyKeysWarning
 			// 
 			this.lbl_StickyKeysWarning.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.lbl_StickyKeysWarning.Location = new System.Drawing.Point(344, 76);
+			this.lbl_StickyKeysWarning.Location = new System.Drawing.Point(178, 76);
 			this.lbl_StickyKeysWarning.Name = "lbl_StickyKeysWarning";
 			this.lbl_StickyKeysWarning.Size = new System.Drawing.Size(160, 25);
 			this.lbl_StickyKeysWarning.TabIndex = 10;

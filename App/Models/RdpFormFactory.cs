@@ -6,15 +6,16 @@ using App.Controls;
 
 using AxMSTSCLib;
 
+#nullable enable
+
 namespace App.Models {
 	public unsafe class RdpFormFactory {
 		private const string _state64 = "AAEAAAD/////AQAAAAAAAAAMAgAAAFdTeXN0ZW0uV2luZG93cy5Gb3JtcywgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODkFAQAAACFTeXN0ZW0uV2luZG93cy5Gb3Jtcy5BeEhvc3QrU3RhdGUBAAAABERhdGEHAgIAAAAJAwAAAA8DAAAAKQAAAAIBAAAAAQAAAAAAAAAAAAAAABQAAAAACAAACAACAAAAAAALAAAACwAAAAs=";
 		
-		public RdpForm Create(Settings settings, ManualResetEvent @event, bool with_nla, int* count, string directory) {
+		public RdpForm Create(Settings settings, ManualResetEvent @event, int* count, string directory) {
 			var form = new RdpForm {
 				Settings = settings,
 				Event = @event,
-				WithNLA = with_nla,
 				Directory = directory,
 				count = count
 			};

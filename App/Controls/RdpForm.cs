@@ -11,10 +11,8 @@ using AxMSTSCLib;
 namespace App.Controls {
 	public class RdpForm : Form {
 		public AxMsRdpClient8NotSafeForScripting Rdp { get; set; }
-
-		public Settings Settings { get; set; }
-		public bool WithNLA { get; set; }
-		public string Directory { get; set; }
+		public Settings Settings { get; set; } = new();
+		public string Directory { get; set; } = "Test";
 		
 		//
 		public ManualResetEvent Event { get; set; }
@@ -30,14 +28,6 @@ namespace App.Controls {
 					return;
 				}
 				
-				// Confirm NLA warning TODO
-				if (WithNLA) {
-					await Task.Delay((int)Settings.CertificateWarningDelay);
-
-					SendKeys.Send("{LEFT}");
-					SendKeys.Send("{ENTER}");
-				}
-
 				//
 				await Task.Delay((int)Settings.LoadingDelay);
 				Rdp.ClickKeys();
@@ -46,16 +36,21 @@ namespace App.Controls {
 				Rdp.CreateScreenshot(Directory);
 			}
 			finally {
-				if (Rdp.Connected == 1) {
-					Rdp.Disconnect();
-				}
-
 				Close();
 			}
 		}
 
 		protected override void Dispose(bool disposing) {
-			Rdp.Dispose();
+			try {
+				if (Rdp.Connected == 1) {
+					Rdp.Disconnect();
+				}
+				
+				Rdp.Dispose();
+			}
+			catch {
+				// ignore
+			}
 			
 			unsafe {
 				*count -= 1;

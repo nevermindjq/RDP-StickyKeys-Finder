@@ -1,9 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
 using App.Models;
 
@@ -81,16 +79,20 @@ namespace App.Extensions
                 unrealised[i] = 0;
             }
             
-            unsafe
-            {
-                fixed(int *pScanCodes = codes) {
-                    fixed (int* pKeyReleased = realised) {
-                        ocx.SendKeys(codes.Length, pKeyReleased, pScanCodes);
-                    }
+            unsafe {
+                try {
+                    fixed (int* pScanCodes = codes) {
+                        fixed (int* pKeyReleased = realised) {
+                            ocx.SendKeys(codes.Length, pKeyReleased, pScanCodes);
+                        }
 
-                    fixed (int* pKeyUnrealised = unrealised) {
-                        ocx.SendKeys(codes.Length, pKeyUnrealised, pScanCodes);
+                        fixed (int* pKeyUnrealised = unrealised) {
+                            ocx.SendKeys(codes.Length, pKeyUnrealised, pScanCodes);
+                        }
                     }
+                }
+                catch {
+                    // ignore
                 }
             }
         }
