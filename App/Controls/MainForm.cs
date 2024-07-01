@@ -19,7 +19,9 @@ namespace App.Controls
 		private readonly RdpFormFactory _factory = new();
 		private readonly List<(RdpForm form, Thread thread)> _worker_threads = new();
 		private readonly ManualResetEvent _event = new(false);
+		private CancellationTokenSource _source = new();
 		private Thread? _execution_thread;
+		private int _count;
         
 		public MainForm() {
 			InitializeComponent();
@@ -65,12 +67,16 @@ namespace App.Controls
 			btn_Select.Enabled = false;
 			
 			//
-			_execution_thread = new(() => _StartChecking(file, (int)_settings.Threads));
+			_execution_thread = new(() => _StartChecking(file, (int)_settings.Threads, _source.Token));
 			_execution_thread.Start();
 		}
 
 		private void btn_Cancel_Click(object sender, EventArgs e) {
 			btn_Cancel.Enabled = false;
+
+			_source.Cancel();
+			_source.Dispose();
+			_source = new();
 			
 			_execution_thread?.Interrupt();
 			_CloseWorkerThreads();
@@ -142,32 +148,34 @@ namespace App.Controls
 			return (form, thread);
 		}
 
-		private void _StartChecking((string path, string name) file, int threads) {
+		private void _StartChecking((string path, string name) file, int threads, CancellationToken token = default) {
 			using (var reader = new StreamReader(file.path)) {
-				while (!reader.EndOfStream) {
-					var count = threads;
+				while (!reader.EndOfStream && !token.IsCancellationRequested) {
+					_count = threads;
 					_event.Reset();
 					
 					// Create apps
 					if (_worker_threads.Count < threads) {
-						for (int i = _worker_threads.Count; i < threads; i++) {
+						for (int i = _worker_threads.Count; i < threads && !token.IsCancellationRequested; i++) {
 							var line = reader.ReadLine().Split(':');
 
 							unsafe {
-								_worker_threads.Add(
-									_CreateApp(
-										line[0],
-										line.Length == 2 ? int.Parse(line[1]) : null,
-										&count,
-										file.name
-									)
-								);
+								fixed (int* count = &_count) {
+									_worker_threads.Add(
+										_CreateApp(
+											line[0],
+											line.Length == 2 ? int.Parse(line[1]) : null,
+											count,
+											file.name
+										)
+									);
+								}
 							}
 						}
 					}
 					
 					try {
-						_event.WaitOne((int)(_settings.ConnectionTimeout + _settings.LoadingDelay + _settings.StickyKeysWarningDelay));
+						_event.WaitOne((int)(_settings.ConnectionTimeout + _settings.LoadingDelay + _settings.StickyKeysWarningDelay), true);
 						
 						_CloseWorkerThreads();
 					}
